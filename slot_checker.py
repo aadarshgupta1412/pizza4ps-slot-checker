@@ -51,44 +51,69 @@ def setup_driver():
     chrome_options.add_argument('--disable-gpu')
     chrome_options.add_argument('--disable-software-rasterizer')
     
-    # First try to use Chrome directly
     try:
-        return webdriver.Chrome(options=chrome_options)
-    except Exception as e:
-        print(f"Direct Chrome initialization failed: {e}")
-        
-        # Fallback: try using ChromeDriverManager
-        try:
-            from selenium.webdriver.chrome.service import Service as ChromeService
-            service = ChromeService()
-            return webdriver.Chrome(service=service, options=chrome_options)
-        except Exception as e:
-            print(f"ChromeDriver initialization failed: {e}")
-            raise
-
-def send_email(subject, message):
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = EMAIL_USER
-        msg['To'] = USER_EMAIL
-        msg['Subject'] = subject
-        
-        msg.attach(MIMEText(message, 'plain'))
-        
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(EMAIL_USER, EMAIL_PASSWORD)
         server.send_message(msg)
         server.quit()
-        print(f"Email sent: {subject}")
+        print(f"Email sent successfully: {subject}")
     except Exception as e:
         print(f"Failed to send email: {str(e)}")
 
-def is_time_in_range(time_str):
-    time_obj = datetime.datetime.strptime(time_str, '%H:%M').time()
-    start_time = datetime.datetime.strptime(TIME_RANGE['start'], '%H:%M').time()
-    end_time = datetime.datetime.strptime(TIME_RANGE['end'], '%H:%M').time()
-    return start_time <= time_obj <= end_time
+def setup_driver():
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument('--disable-gpu')
+    
+    # Use system Chrome and ChromeDriver in GitHub Actions
+    service = webdriver.Service('/usr/bin/chromedriver')
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    return driver
+
+def check_availability(driver, date, num_adults):
+    url = f"https://pizza4ps.quandoo.jp/en/place/pizza-4ps-saigon-centre-2-le-loi-23968/calendar?date={date}"
+    print(f"Checking URL: {url}")
+    driver.get(url)
+    
+    try:
+        print("Waiting for time slots to load...")
+        # Wait for the time slots to load
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "[data-testid='time-slot-button']"))
+        )
+        
+        # Find all time slots
+        time_slots = driver.find_elements(By.CSS_SELECTOR, "[data-testid='time-slot-button']")
+        print(f"Found {len(time_slots)} time slots")
+        available_slots = []
+        
+        for slot in time_slots:
+            time_text = slot.text
+            print(f"Found slot: {time_text}")
+            if time_text and not "FULL" in time_text:
+                # Check if the time is between 12 PM and 9 PM
+                try:
+                    hour = int(time_text.split(':')[0])
+                    if 12 <= hour <= 21:  # 12 PM to 9 PM
+                        available_slots.append(time_text)
+                        print(f"Added available slot: {time_text}")
+                except ValueError:
+                    continue
+        
+        return available_slots
+    
+    except TimeoutException:
+        print(f"Timeout waiting for time slots to load for date: {date}")
+        return []
+    except NoSuchElementException:
+        print(f"No time slots found for date: {date}")
+        return []
+    except Exception as e:
+        print(f"Error checking availability: {str(e)}")
+        return []
 
 def try_booking(driver, date, time_slot, num_adults):
     try:
@@ -119,17 +144,17 @@ def try_booking(driver, date, time_slot, num_adults):
         name_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.NAME, "firstName"))
         )
-        name_input.send_keys(BOOKING_INFO['name'])
+        name_input.send_keys('Aadarsh Gupta')
 
         phone_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.NAME, "phone"))
         )
-        phone_input.send_keys(BOOKING_INFO['phone'])
+        phone_input.send_keys('917879974479')
 
         email_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.NAME, "email"))
         )
-        email_input.send_keys(USER_EMAIL)
+        email_input.send_keys(EMAIL_USER)
 
         # Accept terms
         terms_checkbox = WebDriverWait(driver, 10).until(
