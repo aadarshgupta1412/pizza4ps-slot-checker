@@ -1,0 +1,6 @@
+[build]
+  functions = "netlify/functions"
+
+[functions]
+  external_node_modules = ["chrome-aws-lambda"]
+  node_bundler = "esbuild"

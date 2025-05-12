@@ -1,0 +1,11 @@
+{
+  "name": "pizza4ps-slot-checker",
+  "version": "1.0.0",
+  "description": "Slot checker for Pizza 4P's reservations",
+  "main": "netlify/functions/check_slots.js",
+  "dependencies": {
+    "chrome-aws-lambda": "^10.1.0",
+    "nodemailer": "^6.9.1",
+    "puppeteer-core": "^10.1.0"
+  }
+}
