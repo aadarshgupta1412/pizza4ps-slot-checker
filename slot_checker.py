@@ -68,8 +68,8 @@ def setup_driver():
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-gpu')
     
-    # Use system Chrome and ChromeDriver in GitHub Actions
-    service = ChromeService('/usr/bin/chromedriver')
+    # Use ChromeDriver from Homebrew on Mac
+    service = ChromeService('/opt/homebrew/bin/chromedriver')
     driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
 
