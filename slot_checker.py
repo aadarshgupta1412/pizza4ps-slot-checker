@@ -14,7 +14,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 # Configuration
-TARGET_DATES = ['2025-05-17', '2025-05-18']
+TARGET_DATES = ['2025-05-19']
 TIME_RANGE = {
     'start': '12:00',
     'end': '21:00'
@@ -108,14 +108,8 @@ def check_availability(driver, date, num_adults):
             time_text = slot.text
             print(f"Found slot: {time_text}")
             if time_text and not "FULL" in time_text:
-                # Check if the time is between 12 PM and 9 PM
-                try:
-                    hour = int(time_text.split(':')[0])
-                    if 12 <= hour <= 21:  # 12 PM to 9 PM
-                        available_slots.append(time_text)
-                        print(f"Added available slot: {time_text}")
-                except ValueError:
-                    continue
+                available_slots.append(time_text)
+                print(f"Added available slot: {time_text}")
         
         return available_slots
     
@@ -200,38 +194,85 @@ def check_availability():
     driver = setup_driver()
     
     try:
+        print("Opening booking URL...")
         driver.get(BOOKING_URL)
+        time.sleep(5)  # Wait longer for page to load
         
         for date in TARGET_DATES:
-            for num_adults in BOOKING_INFO['adults']:
+            print(f"\nChecking date: {date}")
+            for num_adults in [4, 3, 2]:  # Try 4, then 3, then 2 adults
                 try:
-                    # Similar steps as in try_booking but only checking availability
-                    date_input = WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, "[data-testid='date-picker-input']"))
+                    print(f"Trying with {num_adults} adults...")
+                    
+                    # Wait for page to be interactive
+                    print("Waiting for page to be interactive...")
+                    WebDriverWait(driver, 20).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, ".reservation-form"))
                     )
-                    date_input.clear()
-                    date_input.send_keys(date)
-
-                    # Get available time slots
-                    time_slots = WebDriverWait(driver, 10).until(
-                        EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".time-slot"))
+                    time.sleep(2)
+                    
+                    # First select number of guests
+                    print(f"Selecting {num_adults} adults...")
+                    guests_button = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable((By.CSS_SELECTOR, ".guest-count-button"))
                     )
-
+                    guests_button.click()
+                    time.sleep(1)
+                    
+                    # Select the number from dropdown
+                    guest_option = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, f"//button[contains(text(), '{num_adults}')]")),
+                    )
+                    guest_option.click()
+                    time.sleep(2)
+                    
+                    # Now select the date
+                    print(f"Selecting date {date}...")
+                    # First click the date input to open calendar
+                    date_button = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable((By.CSS_SELECTOR, ".date-picker-button"))
+                    )
+                    date_button.click()
+                    time.sleep(1)
+                    
+                    # Select the date from calendar
+                    target_date = datetime.datetime.strptime(date, '%Y-%m-%d').strftime('%d')
+                    date_option = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, f"//button[contains(@class, 'calendar-day') and contains(text(), '{target_date}')]")),
+                    )
+                    date_option.click()
+                    time.sleep(2)
+                    
+                    # Look for available time slots
+                    print("Looking for available time slots...")
+                    time_slots = driver.find_elements(By.CSS_SELECTOR, ".time-slot:not(.disabled)")
+                    
                     available_slots = []
                     for slot in time_slots:
-                        time_text = slot.get_attribute('textContent').strip()
-                        if is_time_in_range(time_text):
+                        time_text = slot.text.strip()
+                        if time_text and 'FULL' not in time_text.upper():
                             available_slots.append(time_text)
-
+                    
                     if available_slots:
-                        print(f"Found slots for {date}: {available_slots}")
-                        for time_slot in available_slots:
-                            if try_booking(driver, date, time_slot, num_adults):
-                                return  # Successfully booked
-
-                except TimeoutException:
-                    print(f"No slots available for {date} with {num_adults} adults")
+                        message = f"Found slots for {date} with {num_adults} adults:\n" + "\n".join(available_slots)
+                        print(message)
+                        send_email("Pizza 4P's Slots Available!", message)
+                        return  # Found slots, no need to try with fewer adults
+                    else:
+                        print(f"No available slots found for {date} with {num_adults} adults")
+                    
+                except TimeoutException as e:
+                    print(f"Timeout while checking {date} with {num_adults} adults: {str(e)}")
+                    driver.save_screenshot(f"error_{date}_{num_adults}.png")
                     continue
+                except Exception as e:
+                    print(f"Error while checking {date} with {num_adults} adults: {str(e)}")
+                    driver.save_screenshot(f"error_{date}_{num_adults}.png")
+                    continue
+                
+                # Go back to the homepage for next attempt
+                driver.get(BOOKING_URL)
+                time.sleep(3)
 
     except Exception as e:
         error_message = f"Error checking availability: {str(e)}"
@@ -243,16 +284,7 @@ def check_availability():
 
 def main():
     print("Starting Pizza 4P's slot checker...")
-    
-    # Run immediately once
     check_availability()
-    
-    # Schedule to run every 30 minutes
-    schedule.every(30).minutes.do(check_availability)
-    
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
 
 if __name__ == "__main__":
     main()
