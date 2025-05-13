@@ -9,10 +9,22 @@ jobs:
   check-slots:
     runs-on: ubuntu-latest
     steps:
+      - name: Debug before checkout
+        run: |
+          echo "Current directory before checkout:"
+          pwd
+          ls -la
+
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
+
+      - name: Debug after checkout
+        run: |
+          echo "Current directory after checkout:"
+          pwd
+          ls -la
+          echo "\nRepository contents:"
+          find . -type f
       
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -29,14 +41,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install selenium webdriver-manager requests schedule beautifulsoup4
           
-      - name: List directory contents
-        run: ls -la
-          
       - name: Run slot checker
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        run: |
-          pwd
-          ls -la
-          python slot_checker.py
+        run: python ./slot_checker.py
