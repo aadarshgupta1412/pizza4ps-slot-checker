@@ -2,12 +2,12 @@ import time
 import schedule
 import datetime
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 import smtplib
 from email.mime.text import MIMEText
@@ -69,7 +69,7 @@ def setup_driver():
     chrome_options.add_argument('--disable-gpu')
     
     # Use system Chrome and ChromeDriver in GitHub Actions
-    service = webdriver.Service('/usr/bin/chromedriver')
+    service = ChromeService('/usr/bin/chromedriver')
     driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
 
