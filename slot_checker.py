@@ -68,9 +68,23 @@ def setup_driver():
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-gpu')
     
-    # Use ChromeDriver from Homebrew on Mac
-    service = ChromeService('/opt/homebrew/bin/chromedriver')
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    # Try different ChromeDriver paths based on environment
+    chromedriver_paths = [
+        '/opt/homebrew/bin/chromedriver',  # Mac with Homebrew
+        '/usr/bin/chromedriver',           # GitHub Actions Linux
+    ]
+    
+    for path in chromedriver_paths:
+        try:
+            service = ChromeService(path)
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            print(f'Successfully initialized ChromeDriver from {path}')
+            return driver
+        except Exception as e:
+            print(f'Failed to initialize ChromeDriver from {path}: {str(e)}')
+            continue
+    
+    raise Exception('Could not initialize ChromeDriver from any known path')
     return driver
 
 def check_availability(driver, date, num_adults):
