@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizza 4P's Slot Checker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-3xl font-bold mb-6">Pizza 4P's Slot Checker</h1>
+        
+        <div class="mb-6 bg-green-100 p-4 rounded-lg">
+            <p class="text-green-800">✓ Slot checker is running</p>
+        </div>
+
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Current Configuration</h2>
+            <div id="currentConfig" class="space-y-2">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Update Configuration</h2>
+            <form id="configForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Target Dates (comma-separated)</label>
+                    <input type="text" id="dates" class="w-full p-2 border rounded" required>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Start Time</label>
+                        <input type="time" id="startTime" class="w-full p-2 border rounded" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">End Time</label>
+                        <input type="time" id="endTime" class="w-full p-2 border rounded" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Min Adults</label>
+                        <input type="number" id="minAdults" min="1" max="10" class="w-full p-2 border rounded" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Max Adults</label>
+                        <input type="number" id="maxAdults" min="1" max="10" class="w-full p-2 border rounded" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Notification Email</label>
+                    <input type="email" id="email" class="w-full p-2 border rounded" required>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                    Update Configuration
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Load current configuration
+        fetch('config.json')
+            .then(response => response.json())
+            .then(config => {
+                // Display current config
+                document.getElementById('currentConfig').innerHTML = `
+                    <p>📅 Checking dates: ${config.target_dates.join(', ')}</p>
+                    <p>⏰ Time range: ${config.time_range.start} - ${config.time_range.end}</p>
+                    <p>👥 Adults: ${config.num_adults_range.min}-${config.num_adults_range.max}</p>
+                    <p>📧 Notifications: ${config.email}</p>
+                `;
+
+                // Populate form
+                document.getElementById('dates').value = config.target_dates.join(', ');
+                document.getElementById('startTime').value = config.time_range.start;
+                document.getElementById('endTime').value = config.time_range.end;
+                document.getElementById('minAdults').value = config.num_adults_range.min;
+                document.getElementById('maxAdults').value = config.num_adults_range.max;
+                document.getElementById('email').value = config.email;
+            });
+
+        // Handle form submission
+        document.getElementById('configForm').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const newConfig = {
+                target_dates: document.getElementById('dates').value.split(',').map(d => d.trim()),
+                time_range: {
+                    start: document.getElementById('startTime').value,
+                    end: document.getElementById('endTime').value
+                },
+                num_adults_range: {
+                    min: parseInt(document.getElementById('minAdults').value),
+                    max: parseInt(document.getElementById('maxAdults').value)
+                },
+                email: document.getElementById('email').value
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/update-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(newConfig)
+                });
+
+                if (response.ok) {
+                    alert('Configuration updated successfully!');
+                    location.reload();
+                } else {
+                    throw new Error('Failed to update configuration');
+                }
+            } catch (error) {
+                alert('Error updating configuration: ' + error.message);
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+    "target_dates": ["2025-05-19"],
+    "time_range": {
+        "start": "12:00",
+        "end": "21:00"
+    },
+    "num_adults_range": {
+        "min": 2,
+        "max": 4
+    },
+    "email": "aadarshgupta1412@gmail.com"
+}

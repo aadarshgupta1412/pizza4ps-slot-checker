@@ -13,14 +13,46 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# Configuration
-TARGET_DATES = ['2025-05-19']
-TIME_RANGE = {
-    'start': '12:00',
-    'end': '21:00'
-}
+import json
+
+# Load configuration
+def load_config():
+    with open('config.json', 'r') as f:
+        return json.load(f)
+
+# Update README with current configuration
+def update_readme(config):
+    with open('README.md', 'r') as f:
+        content = f.read()
+    
+    # Find the Features section and update it
+    start = content.find('## Features')
+    end = content.find('##', start + 1) if content.find('##', start + 1) != -1 else len(content)
+    
+    # Create new features section
+    features = f"## Features\n\n"
+    features += f"* Checks for slots on {', '.join(config['target_dates'])}\n"
+    features += f"* Looks for slots between {config['time_range']['start']} to {config['time_range']['end']}\n"
+    features += f"* Tries booking for {config['num_adults_range']['min']}-{config['num_adults_range']['max']} adults\n"
+    features += "* Sends email notifications when slots are found\n"
+    
+    # Replace the section
+    new_content = content[:start] + features + content[end:]
+    
+    with open('README.md', 'w') as f:
+        f.write(new_content)
+
+# Load configuration
+config = load_config()
+TARGET_DATES = config['target_dates']
+TIME_RANGE = config['time_range']
+USER_EMAIL = config['email']
+
+# Update README with current configuration
+update_readme(config)
+
+# Constants
 BOOKING_URL = 'https://www.tablecheck.com/en/shops/pizza-4ps-in-indiranagar/reserve'
-USER_EMAIL = 'aadarshgupta1412@gmail.com'
 SMTP_SERVER = 'smtp.gmail.com'
 SMTP_PORT = 587
 # Load environment variables
