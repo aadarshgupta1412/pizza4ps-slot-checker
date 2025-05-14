@@ -442,6 +442,90 @@ def check_availability():
                     # Take screenshot after refresh
                     driver.save_screenshot(f"after_refresh_{date}_{num_adults}.png")
                     
+                    # IMPORTANT: Check the confirmation checkbox first
+                    print("Looking for confirmation checkbox...")
+                    try:
+                        # Try different selectors for the confirmation checkbox
+                        checkbox_selectors = [
+                            "input[type='checkbox']",
+                            ".checkbox",
+                            "[type='checkbox']",
+                            "#confirm",
+                            "[name*='confirm']"
+                        ]
+                        
+                        checkbox_found = False
+                        for selector in checkbox_selectors:
+                            try:
+                                checkboxes = driver.find_elements(By.CSS_SELECTOR, selector)
+                                if checkboxes:
+                                    for checkbox in checkboxes:
+                                        try:
+                                            if not checkbox.is_selected():
+                                                checkbox.click()
+                                                print(f"Clicked confirmation checkbox with selector: {selector}")
+                                                checkbox_found = True
+                                                time.sleep(2)
+                                                break
+                                        except:
+                                            continue
+                                if checkbox_found:
+                                    break
+                            except Exception as e:
+                                print(f"Could not click checkbox with selector {selector}: {str(e)}")
+                        
+                        # If no checkbox found using CSS selectors, try XPath
+                        if not checkbox_found:
+                            try:
+                                # Look for checkboxes with nearby text about confirmation
+                                checkbox_xpath = "//input[@type='checkbox'][ancestor::*[contains(text(), 'confirm') or contains(text(), 'read') or contains(text(), 'agree')]]" 
+                                checkboxes = driver.find_elements(By.XPATH, checkbox_xpath)
+                                if checkboxes:
+                                    for checkbox in checkboxes:
+                                        try:
+                                            if not checkbox.is_selected():
+                                                checkbox.click()
+                                                print("Clicked confirmation checkbox using XPath")
+                                                checkbox_found = True
+                                                time.sleep(2)
+                                                break
+                                        except:
+                                            continue
+                            except Exception as e:
+                                print(f"Could not click checkbox using XPath: {str(e)}")
+                        
+                        # If still no checkbox found, try a more aggressive approach with JavaScript
+                        if not checkbox_found:
+                            try:
+                                # Use JavaScript to check all checkboxes on the page
+                                js_script = """
+                                var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                                var clicked = false;
+                                for (var i = 0; i < checkboxes.length; i++) {
+                                    if (!checkboxes[i].checked) {
+                                        checkboxes[i].checked = true;
+                                        checkboxes[i].dispatchEvent(new Event('change', { 'bubbles': true }));
+                                        clicked = true;
+                                    }
+                                }
+                                return clicked;
+                                """
+                                result = driver.execute_script(js_script)
+                                if result:
+                                    print("Checked confirmation checkbox using JavaScript")
+                                    checkbox_found = True
+                                    time.sleep(2)
+                            except Exception as e:
+                                print(f"Could not check checkbox using JavaScript: {str(e)}")
+                        
+                        if not checkbox_found:
+                            print("WARNING: Could not find or check confirmation checkbox")
+                    except Exception as e:
+                        print(f"Error handling confirmation checkbox: {str(e)}")
+                    
+                    # Take screenshot after checkbox attempt
+                    driver.save_screenshot(f"after_checkbox_{date}_{num_adults}.png")
+                    
                     # Step 1: Select number of adults
                     print(f"Selecting {num_adults} adults...")
                     try:
