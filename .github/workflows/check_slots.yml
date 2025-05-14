@@ -33,11 +33,4 @@ jobs:
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        run: python slot_checker.py
-          pip install selenium webdriver-manager requests schedule beautifulsoup4
-          
-      - name: Run slot checker
-        env:
-          EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        run: python ./slot_checker.py
+        run: python slot_checker_new.py
