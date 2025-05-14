@@ -4,11 +4,10 @@ Automated slot checker for Pizza 4P's restaurant reservations. This serverless f
 
 ## Features
 
-- Checks for slots on May 17th and 18th, 2025
-- Looks for slots between 12 PM to 9 PM
-- Tries booking for 2-4 adults
-- Sends email notifications when slots are found
-
+* Checks for slots on 2025-05-19
+* Looks for slots between 12:00 to 21:00
+* Tries booking for 2-4 adults
+* Sends email notifications when slots are found
 ## Setup
 
 1. Clone this repository

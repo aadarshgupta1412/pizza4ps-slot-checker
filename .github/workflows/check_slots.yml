@@ -1,9 +1,9 @@
 name: Check Pizza 4P's Slots
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'  # Run every 30 minutes
-  workflow_dispatch:  # Allow manual trigger
+  # schedule:
+  #   - cron: '*/30 * * * *'  # Run every 30 minutes
+  workflow_dispatch:  # Allow manual trigger only
 
 jobs:
   check-slots:
